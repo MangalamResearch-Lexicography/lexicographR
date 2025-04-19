@@ -652,13 +652,13 @@ myApp <- function(...) {
         Cores <<- 2
       }
 
-      print(Cores)
 
-      if(!is.null(MetaVal)){
+      if(!is.null(MetaVal) && length(MetaVal)>0){
         source("./R/CorpusFreqsAndDPfunctions.R")
-        SubcorporaFreqsAndDP <- GetSubcorporaFreqsAndDP(MetadataPath, ColToJoinBy, MetaVal,NormalizeFreqPer, HeadwordVar, FreqTablesSourceDir="./data/OutputFreqs", mcCores=Cores)
-        write.csv(SubcorporaFreqsAndDP, paste0("./data/Outputs/SubcorporaHeadwordFreqsAndDP_",MetaVal,".csv"), row.names = F)
-
+        for (mv in MetaVal){
+        SubcorporaFreqsAndDP <- GetSubcorporaFreqsAndDP(MetadataPath, ColToJoinBy, mv,NormalizeFreqPer, HeadwordVar, FreqTablesSourceDir="./data/OutputFreqs", mcCores=Cores)
+        write.csv(SubcorporaFreqsAndDP, paste0("./data/Outputs/SubcorporaHeadwordFreqsAndDP_", mv,".csv"), row.names = F)
+        }
 
       }else{
         SubcorporaFreqsAndDP <- "nothing"
