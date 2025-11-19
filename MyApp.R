@@ -111,9 +111,9 @@ myApp <- function(...) {
     ),
     
     # NEW SEMANTIC TAGGING TAB
-    # tabPanel("SemanticTagging", fluid = TRUE,
-    #          SemanticTaggingUI("semanticTagging")
-    # ),
+    tabPanel("SemanticTagging", fluid = TRUE,
+             SemanticTaggingUI("semanticTagging")
+    ),
     
     tabPanel("Visualizations",
              mainPanel(width = 12,
