@@ -146,7 +146,7 @@ GdexSorterServer <- function(id, DictData, sIDindexDir="./data/CorpusData/", fil
 
      ScoredSentsForDisplay <- CreateHorizontalGdexSentDF(SampSentsDF, wordFormVar, AdditionalVars)
      ScoredSentsForDisplay <- RemoveSimilarSents(ScoredSentsForDisplay, simThreshold=0.1)
-     datatable(ScoredSentsForDisplay, escape=F, rownames= FALSE)
+     datatable(ScoredSentsForDisplay[1:SampleSize,], escape=F, rownames= FALSE)
    }else{
      showModal(
        modalDialog(
@@ -224,7 +224,7 @@ GdexSorterServer <- function(id, DictData, sIDindexDir="./data/CorpusData/", fil
       SampSentsDF$lemma <- x
       ScoredSentsForDisplay <- CreateHorizontalGdexSentDF(SampSentsDF,wordFormVar, AdditionalVars)
       ScoredSentsForDisplay <- ScoredSentsForDisplay[,which(colnames(ScoredSentsForDisplay) %in% c("lemma","ID","Sent", AdditionalVars))] # retains only ID & Sent cols
-      fwrite(ScoredSentsForDisplay, paste0("./data/Outputs/Examples/",MakeSafeForFilename(x),"_ExampleSents.csv"))
+      fwrite(ScoredSentsForDisplay[1:SampleSize,], paste0("./data/Outputs/Examples/",MakeSafeForFilename(x),"_ExampleSents.csv"))
        },  mc.cores=Cores)
       # SampSents <- lapply(HeadwordVec, function(x)
     #   SortAndSample(CorpusDocsDir="./data/CorpusDocs", HeadFreqs, HeadwordVar, wordFormVar, x, GdexRulesDF,CollocatesDF,collocateBoost, LenRange, LongerPen, ShorterPen, Var, SampleSize, MetaDF, MetaVar, MinScore, AdditionalVars, Cores))

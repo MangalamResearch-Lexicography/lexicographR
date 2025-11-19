@@ -14,8 +14,8 @@ editor_options:
     wrap: 72
 ---
 
-Welcome to the Digital Dictionary Builder tool. There are 7 main tabs that
-you can use, and the user-guide is organized by these 7 tabs.
+Welcome to the Digital Dictionary Builder tool. There are 8 main tabs that
+you can use, and the user-guide is organized by these 8 tabs.
 
 Here is an outline of how the user-guide is structured:
 
@@ -23,9 +23,10 @@ Here is an outline of how the user-guide is structured:
 2.  ExtractCorpusData tab usage
 3.  Collocations tab usage
 4.  Examples tab usage
-5.  Visualizations tab usage
-6.  BuildDictionary tab usage
-7.  ShareData tab usage
+5.  SemanticTagging tab usage
+6.  Visualizations tab usage
+7.  BuildDictionary tab usage
+8.  ShareData tab usage
 
 # Requirements
 
@@ -800,6 +801,354 @@ each sampled sentence based on the applied rule. The number following
 'penalty' in the column names indicates the row corresponding to the
 applied rule in the GDEX template CSV.
 
+# SemanticTagging tab
+
+The Semantic Tagging feature uses AI-powered word sense disambiguation to automatically tag corpus sentences with appropriate word senses from your dictionary. This tool can significantly accelerate the process of identifying which sense of a polysemous word appears in each corpus sentence.
+
+## Overview
+
+Semantic tagging assigns sense labels to words in context based on their meaning. For example, if your dictionary defines multiple senses for a word like "dharma" (religious law, virtue, phenomenon, etc.), this tool will analyze each corpus sentence containing "dharma" and predict which sense is being used.
+
+The tool supports three different tagging methods, each using different types of contextual information:
+
+1. **Zero-shot**: Uses only sense definitions
+2. **With Translations**: Uses translation data to improve disambiguation
+3. **With Training Examples**: Uses previously tagged examples as training data
+
+## Prerequisites
+
+Before using the Semantic Tagging feature, you must have:
+
+- **Sense definitions file**: A CSV file containing your word senses with headwords and definitions
+- **Corpus data**: Previously extracted using the ExtractCorpusData tab
+- **API key**: Either a Google AI Studio API key (free) or an Anthropic API key (paid)
+
+Additional requirements depending on method:
+- **For "With Translations" method**: Translation files in `./data/Other/Translations/`
+- **For "With Training Examples" method**: Both translation files and example sentence files in `./data/Outputs/Examples/`
+
+## Getting Started
+
+### 1. Prepare Your Sense Definitions File
+
+Create a CSV file with at least two columns:
+
+- **Headword column**: Contains the word or lemma (e.g., "dharma", "karma")
+- **Definition column**: Contains the sense definition for each row
+
+Example structure:
+```
+headword,sense_id,definition
+dharma,1,religious law or duty
+dharma,2,virtue or righteousness
+dharma,3,phenomenon or mental object
+```
+
+Each unique sense should have its own row. The tool will use these definitions to distinguish between different meanings of the same headword.
+
+### 2. Upload Sense Definitions
+
+1. Click "Browse" under "Upload sense definitions (CSV)"
+2. Select your CSV file
+3. The app will display how many sense definitions were loaded
+4. Select the appropriate column names:
+   - **Headword column name**: Choose the column containing your headwords
+   - **Definition column name**: Choose the column containing sense definitions
+
+### 3. Choose a Tagging Method
+
+Select one of three methods based on available data:
+
+#### Zero-shot Method
+- **When to use**: First-time tagging or when no additional data is available
+- **How it works**: The AI analyzes sentences using only the sense definitions you provide
+- **Advantages**: Requires minimal preparation; works immediately with just definitions
+- **Limitations**: May be less accurate than methods using additional context
+
+#### With Translations Method
+- **When to use**: When you have translation data for your corpus sentences
+- **Requirements**: Translation files must exist in `./data/Other/Translations/` with filenames matching the pattern `_xx[encoded-lemma]xx__Translation.csv`
+- **How it works**: The AI uses both sense definitions and translation equivalents to disambiguate
+- **Advantages**: Translations provide strong contextual clues about meaning
+- **Note**: Only lemmas with available translation files will appear in the selection menu
+
+#### With Training Examples Method
+- **When to use**: After you've already tagged some sentences using the "With Translations" method
+- **Requirements**: 
+  - Tagged training data in `./data/SemanticTagging/with_translation/`
+  - Example sentence files in `./data/Outputs/Examples/`
+- **How it works**: The AI learns from your previously tagged examples to tag new sentences
+- **Advantages**: Most accurate method as it learns from actual tagged examples
+- **Recommended workflow**: Tag initial sentences using "With Translations", then use those as training data for larger-scale tagging
+
+### 4. Select a Lemma
+
+After uploading sense definitions and choosing a method, select which lemma (headword) you want to process from the dropdown menu. The available lemmas depend on your chosen method:
+
+- **Zero-shot**: All lemmas from your sense definitions file
+- **With Translations**: Only lemmas that have translation files available
+- **With Training Examples**: Only lemmas that have both example files and tagged training data
+
+### 5. Configure AI Provider
+
+Choose between two AI providers:
+
+#### Google Gemini (Free)
+- **API Key**: Obtain a free API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+- **Models available**:
+  - Gemini 1.5 Flash (faster, recommended for testing)
+  - Gemini 1.5 Pro (more capable, for production)
+- **Cost**: Free tier available with rate limits
+
+#### Anthropic Claude (Paid)
+- **API Key**: Requires a paid [Anthropic API key](https://console.anthropic.com/)
+- **Models available**:
+  - Claude Sonnet 4.5 (recommended for best results)
+  - Claude Opus 4.1 (highest capability)
+  - Claude Sonnet 4 (fast and efficient)
+- **Cost**: Pay-per-token pricing; see Anthropic's website for current rates
+
+**Note on API Keys**: Your API keys are not stored by the application. You must enter them each time you use the tool. Never share your API keys publicly.
+
+### 6. Adjust Processing Parameters
+
+Configure the following settings according to your needs:
+
+**Temperature** (default: 0)
+- Range: 0 to 1
+- Lower values (0-0.2): More deterministic, consistent results
+- Higher values (0.5-1.0): More creative, varied results
+- Recommendation: Keep at 0 for semantic tagging to ensure consistency
+
+**Max tokens** (default: 4000)
+- Range: 1000 to 8000
+- Controls maximum response length from the AI
+- Increase if processing very large batches or getting truncated responses
+
+**Confidence threshold** (default: 0.79)
+- Range: 0 to 1
+- Minimum confidence level required to accept a sense prediction
+- Predictions below this threshold will be flagged for manual review
+- Lower values: More predictions accepted (may include uncertain cases)
+- Higher values: Only high-confidence predictions accepted
+
+**Sentences per batch** (default: 100)
+- Range: 10 to 200
+- Number of sentences sent to the AI in each API call
+- Smaller batches: More API calls, slower but more manageable
+- Larger batches: Fewer API calls, faster but may exceed token limits
+
+## Testing and Processing
+
+### 7. Choose Processing Scope
+
+Before running full processing, you can test the setup:
+
+- **Test (sample sentences)**: Process a small sample (default: 50 sentences)
+  - Use this to verify your setup and check output quality
+  - Adjust the sample size using the numeric input (10-500 sentences)
+  - Recommended before processing all data
+  
+- **All sentences**: Process all available corpus sentences for the selected lemma
+  - Only available after successful testing
+  - May take considerable time depending on corpus size
+
+### 8. Validate Setup
+
+Click the **"Validate Setup"** button to check that all required data and configurations are correct. The validation checks:
+
+- Sense definitions are loaded
+- Correct columns are selected
+- A lemma is selected
+- API key is provided
+- Required files exist for the chosen method
+
+If validation succeeds, you'll see a success message. If it fails, carefully read the error message to identify what needs to be corrected.
+
+### 9. Run Test
+
+After successful validation, click **"Run Test"** to process your sample sentences. This will:
+
+1. Retrieve sample sentences from your corpus data
+2. Send them to the AI provider for sense tagging
+3. Display a preview of results
+4. Show confidence scores for each prediction
+
+Review the test results carefully:
+- Check if predicted senses are accurate
+- Examine confidence scores
+- Identify any problematic patterns
+- Adjust parameters if needed and re-test
+
+### 10. Process All Data
+
+Once satisfied with test results, click **"Process All Data"** to tag all sentences for the selected lemma. 
+
+**Important notes**:
+- This process can be time-consuming for large corpora
+- Progress updates will appear in the status message area
+- Do not close the app while processing is in progress
+- Results are saved incrementally to prevent data loss
+
+## Understanding Results
+
+### Results Preview
+
+After processing, a data table preview will display the tagged sentences with the following columns:
+
+- **sentence_id**: Unique identifier for each sentence
+- **headword**: The word being tagged
+- **sentence**: The full sentence text
+- **predicted_sense**: The sense label assigned by the AI
+- **confidence**: Confidence score (0-1) for the prediction
+- **ai_provider**: Which AI service was used (gemini/claude)
+- **model_used**: Specific model name
+- **method**: Which tagging method was used
+
+Additional columns may appear depending on the method:
+- **translation**: Translation of the sentence (with_translations method)
+- **translation_equivalent**: Specific translation of the target word (with_translations method)
+
+### Downloading Results
+
+Click the **"Download Results"** button to save the complete tagged dataset as a CSV file. This file can be:
+
+- Imported into spreadsheet software for manual review and correction
+- Used as training data for future "With Training Examples" processing
+- Analyzed statistically to understand sense distributions
+- Integrated into your dictionary building workflow
+
+## File Organization
+
+The Semantic Tagging feature organizes files in specific directories:
+
+```
+./data/
+├── Other/
+│   └── Translations/           # Translation files for "with_translations" method
+│       └── _xx[encoded]xx__Translation.csv
+├── Outputs/
+│   └── Examples/              # Example sentence files for "with_training" method
+│       └── _xx[encoded]xx__ExampleSents.csv
+└── SemanticTagging/
+    ├── zero_shot/             # Results from zero-shot method
+    ├── with_translation/      # Results from with_translations method
+    └── with_trainingdata/     # Results from with_training method
+```
+
+**File naming convention**: Files use encoded filenames to handle Unicode characters and special characters safely. The encoding format is `_xx[numeric-code]xx_` where the numeric code represents the UTF-8 encoding of the headword.
+
+## Recommended Workflow
+
+For best results, follow this suggested workflow:
+
+1. **Start small**: Begin with zero-shot on 2-3 headwords to understand the process
+2. **Add translations**: If available, use the "With Translations" method for improved accuracy
+3. **Review and correct**: Manually review initial results and correct any errors
+4. **Build training data**: Use corrected translation-method results as training data
+5. **Scale up**: Use "With Training Examples" method for large-scale processing
+6. **Iterate**: Continuously add to your training data as you review more results
+
+## Tips and Best Practices
+
+### Improving Accuracy
+
+- **Clear definitions**: Write concise, distinctive definitions for each sense
+- **Sufficient examples**: For training method, include diverse example sentences
+- **Appropriate threshold**: Adjust confidence threshold based on your quality requirements
+- **Regular review**: Manually review and correct results to improve training data
+
+### Managing API Costs
+
+- **Test thoroughly**: Use small samples before processing all data
+- **Choose appropriate models**: 
+  - Use Gemini Flash for initial testing (free)
+  - Use Claude Sonnet 4.5 for production if budget allows
+- **Batch efficiently**: Larger batches reduce API calls but may increase errors
+- **Process strategically**: Prioritize high-frequency words for manual review
+
+### Handling Errors
+
+If processing fails:
+1. Check your API key is correct and has sufficient quota
+2. Reduce batch size if getting timeout errors
+3. Check internet connection for network-related issues
+4. Verify required files exist in correct directories
+5. Review error messages in the status area for specific guidance
+
+### Data Quality
+
+- **Consistent encoding**: Ensure all CSV files use UTF-8 encoding
+- **Clean data**: Remove duplicate sentences before processing
+- **Complete definitions**: Every sense should have a clear, distinct definition
+- **Balanced examples**: For training method, include examples of all senses
+
+## Integration with Other Features
+
+Semantic tagging results can enhance other lexicographR features:
+
+- **BuildDictionary**: Include sense-tagged examples in dictionary entries
+- **Visualizations**: Visualize sense distribution across your corpus
+- **Examples**: Filter example sentences by tagged sense
+- **Collocations**: Analyze collocations specific to each word sense
+
+## Technical Notes
+
+### API Requirements
+
+The tool requires the `httr` and `jsonlite` R packages. These will be checked automatically when the tab loads.
+
+### Processing Time
+
+Processing time depends on:
+- Number of sentences
+- Batch size
+- AI provider and model
+- Network speed
+- API rate limits
+
+As a rough estimate:
+- 100 sentences: 1-3 minutes
+- 1,000 sentences: 10-30 minutes  
+- 10,000 sentences: 2-5 hours
+
+### Memory Considerations
+
+For very large datasets (>50,000 sentences), consider:
+- Processing in smaller chunks by running multiple sessions
+- Increasing available system memory
+- Using the batch size parameter to control memory usage
+
+## Troubleshooting
+
+**"No lemmas available" message**:
+- Verify sense definitions file is uploaded correctly
+- For translation method: Check translation files exist in `./data/Other/Translations/`
+- For training method: Check both example files and tagged data exist
+
+**API key errors**:
+- Verify API key is copied correctly (no extra spaces)
+- Check API key has not expired or reached quota limits
+- Ensure you're using the correct provider's key
+
+**Empty or incomplete results**:
+- Check status messages for specific error details
+- Reduce batch size and retry
+- Verify corpus data exists for the selected lemma
+- Increase max_tokens parameter
+
+**Inconsistent predictions**:
+- Lower the temperature parameter toward 0
+- Review sense definitions for clarity and distinctiveness
+- Add more training examples (for training method)
+- Consider manual review of edge cases
+
+**Performance issues**:
+- Reduce batch size for slower connections
+- Use Gemini Flash instead of Pro/Opus models for testing
+- Process high-frequency lemmas during off-peak hours
+- Consider processing overnight for very large datasets
+
 # Visualizations
 
 This tab provides the option to generate graphs for visualizing data
@@ -1324,6 +1673,10 @@ percentage or number of pixels for the image size. For example,
 '%%%width 40%' or '%%%width 300'. The height of the image will
 automatically adjust based on your specified width.
 
+**Interactive Example Filter (Shiny only)**
+
+Shiny allows interactive filtering of examples by variables (e.g., genre). Include a filter menu using the Text keyword %%%filterby followed by desired variable names. This requires a CSV file with example content and related variables.
+
 Since the text box is relatively small, we recommend composing your text
 string in a text editor and then pasting it into the box. To retrieve
 the text string later, check the DictMakingRulesList.json file, where
@@ -1483,8 +1836,6 @@ In addition to TAB() for Quarto books, Shiny supports COL() and SEARCHBY() as ke
 When naming elements for dictionary search, use intuitive names that will appear in user-facing menus (e.g., 'English' instead of 'headword').
 
 The dictionary supports exact and partial matches for searches, capturing entire words but not parts of words. Multi-word headwords like 'corpus linguistics' can be found by searching 'corpus', 'linguistics', or 'corpus linguistics', but not 'linguist'.
-
-**Interactive Example Filter**: Shiny allows interactive filtering of examples by variables (e.g., genre). Include a filter menu using the Text keyword %%%filterby followed by desired variable names. This requires a CSV file with example content and related variables.
 
 **Dictionary Preview**: In Shiny apps, the preview shows headwords used in entry rules, the first three entries, and the last headword used. To exit the Shiny preview and return to editing, click 'stop preview'. Return to the preview by clicking 'preview' again in the editing app.
 
